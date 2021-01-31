@@ -1,0 +1,123 @@
+version: 2
+jobs:
+  checkout_code:
+    docker:
+      - image: circleci/python:3.6.1
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout:
+          path: code
+      - save_cache:
+          paths:
+            - ./code
+          key: v1-code-{{ .Environment.CIRCLE_SHA1 }}
+
+
+  backend_test:
+    docker:
+      - image: circleci/python:3.6.1
+
+    working_directory: ~/repo
+
+    steps:
+      - restore_cache:
+          keys:
+            - v1-code-{{ .Environment.CIRCLE_SHA1 }}
+
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "code/requirements.txt" }}
+            - v1-dependencies-
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r code/requirements.txt
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "code/requirements.txt" }}
+
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            export PYTHONPATH=/home/circleci/repo/code
+            python code/tests/test_dao.py && \
+            python code/tests/test_lrr_search_web_service.py
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
+
+  backend_deploy:
+    docker:
+      - image: circleci/python:3.6.1
+    working_directory: ~/repo/code
+    steps:
+      - restore_cache:
+          keys:
+            - v1-code-{{ .Environment.CIRCLE_SHA1 }}
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "code/requirements.txt" }}
+      - docker:
+          name: build docker image
+          command: |
+            cp -r dao docker/backend/
+            cp -r requirements.txt docker/backend/
+            cp -r settings docker/backend/
+            cp -r tools docker/backend/
+            cp -r web_service docker/backend/
+            docker build -t backend:v1 docker/backend/
+
+  frontend_test:
+    docker:
+      - image: circleci/node:10.16.0
+    working_directory: ~/repo
+
+    steps:
+      - restore_cache:
+          keys:
+            - v1-code-{{ .Environment.CIRCLE_SHA1 }}
+
+      - restore_cache:
+          keys:
+            - v1-frontend-dependencies-{{ checksum "code/frontend/package.json" }}-{{ checksum "code/frontend/package-lock.json" }}
+            - v1-frontend-dependencies-
+      - run:
+          name: install dependencies
+          command: |
+            cd ~/repo/code/frontend && \
+            npm install && \
+            cd ~/repo
+      - save_cache:
+          paths:
+            - ./node_modules
+          key: v1-frontend-dependencies-{{ checksum "code/frontend/package.json" }}-{{ checksum "code/frontend/package-lock.json" }}
+
+      - run:
+          name: build
+          command: |
+            cd ~/repo/code/frontend && \
+            npm run build && \
+            cd ~/repo
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
+
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      - checkout_code
+      - backend_test:
+          requires:
+            - checkout_code
+      - frontend_test:
+          requires:
+            - checkout_code

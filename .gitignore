@@ -1,0 +1,10 @@
+.idea
+test
+settings.ini
+*.pyc
+*.log
+frontend/dist/
+frontend/node_modules/
+test_files/
+config_files/
+.DS_Store

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ectodomain LRR database</title>
+
+    <meta name="description" content="Ectodomain LRR prediction for land plant LRR-RLK.">
+    <meta name="keyword" content="PhytoLRR, Ectodomain LRR, lan plant LRR-RLK">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha256-YLGeXaapI0/5IgZopewRJcFXomhRMlYYjugPLSyNjTY=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-multiselect@2.1.6/dist/vue-multiselect.min.css" integrity="sha256-z2yEj00DOz/exljY7gOZL3Zw4pHEGcPY3UeiH97DRHE=" crossorigin="anonymous">
+
+    <style type="text/css">
+        .inlrr{font-weight:bold;text-decoration: underline overline black;}
+        .innsite{background-color:#ff9496;}
+        .falsediscovery{color: grey;text-decoration:line-through;}
+        .sequence{word-wrap:break-word;text-transform: uppercase;font-family:Courier New;}
+        .ssh{background-color:#ff9496;}
+        .sse{background-color:#9fbcff;}
+        .ssc{background-color:lightyellow;}
+    </style>
+</head>
+<body>
+
+<%= require('../../components/nav/nav.ejs')({active: 'db'}) %>
+<%= require('../../components/alert/alert.ejs')() %>
+
+<div class="container">
+    <div class="row">
+        <div id="navigator-view" class="col-4">
+            <div>
+                <multiselect
+                        v-model="value"
+                        track-by="name" label="name"
+                        placeholder="Select a species to filter"
+                        :options="options"
+                        :searchable="false"
+                        :allow-empty="true"
+                        v-bind:disabled="waitingBackend"
+                        @Input="onSpeciesSelectEnd">
+                    <template slot="singleLabel" slot-scope="{ option }"><i>{{ option.name }}</i> ({{option.code}})</template>
+                    <template slot="option" slot-scope="{ option }"><i>{{ option.name }}</i></template>
+                </multiselect>
+
+            </div>
+            <ul class="list-group">
+                <a class="list-group-item" href="#"
+                   v-for="seq in seqs"
+                   v-bind:class="{ active: seq.isActive }"
+                   v-on:click="onSelect(seq)" >
+                    {{ seq.sequence_id }}
+                </a>
+            </ul>
+
+            <div class="clearfix mt-1">
+                <div class="float-left">
+                    <div class="btn-group">
+                        <button type="button"
+                                v-bind:disabled="pageIndex===0 || waitingBackend"
+                                class="btn btn-outline-primary"
+                                v-on:click="prevPage()">&lsaquo;&lsaquo;</button>
+                        <button type="button"
+                                v-bind:disabled="pageIndex===Math.floor(total/pageSize) || waitingBackend"
+                                class="btn btn-outline-primary"
+                                v-on:click="nextPage()">&rsaquo;&rsaquo;</button>
+                    </div>
+                </div>
+                <div class="float-right">
+                    <div class="btn-group">
+                        <input type="number" min="1" v-bind:disabled="waitingBackend"
+                               v-model="goToIndex"
+                               placeholder="page"
+                               @keyup.enter="goTo">
+                        <button type="button"
+                                v-bind:disabled="waitingBackend"
+                                class="btn btn-outline-primary"
+                                v-on:click="goTo">Go</button>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-1">
+                {{pageIndex + 1}}/{{Math.ceil(total/pageSize)}}, page size:
+                <select v-model="pageSize" v-on:change="onChangePageSize()" v-bind:disabled="waitingBackend">
+                    <option>10</option>
+                    <option>20</option>
+                    <option>40</option>
+                </select>
+            </p>
+
+        </div>
+
+        <div id="color-seq" class="col-8">
+            <div v-if="waitingBackend">
+                <div class="d-flex justify-content-center" >
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div v-else-if="seq_id.length === 0">
+                <h1>No contents</h1>
+                <a href="/">Click to see all sequences</a>
+            </div>
+            <div v-else>
+                <h2>{{seq_id}}</h2>
+                <p>Sequence length: {{selectedSeq.seq.length}}, LRRs num: {{motifTable.length}}</p>
+                <table class="table table-bordered table-sm sequence">
+                    <thead>
+                    <tr>
+                        <th>Start</th>
+                        <th>Score</th>
+                        <th>Sequence</th>
+                        <% if (process.env.NODE_ENV === 'development') { %><th>Operation</th><% } %>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-bind:class="{ falsediscovery: motif.false_discovery }" v-for="motif in motifTable">
+                        <td>{{motif.offset}}</td>
+                        <td>{{motif.score | fixFloat}}</td>
+                        <td style="max-width: 500px">{{motif.seq}}</td>
+                        <% if (process.env.NODE_ENV === 'development') { %><td>
+                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                    v-on:click="markFalseDiscovery(motif.row, false)"
+                                    v-if="motif.false_discovery">
+                                unmark wrong
+                            </button>
+
+                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                    v-on:click="removeMotif(motif.motifId)"
+                                    v-else-if="motif.manually_add">
+                                delete
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                    v-on:click="markFalseDiscovery(motif.row, true)"
+                                    v-else>
+                                mark wrong
+                            </button>
+                        </td><% } %>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="mb-3 border-bottom">
+                    <table style="border: 0px;">
+                        <tr>
+                            <td>
+                                <span>Display:</span>
+                            </td>
+                            <td>
+                                <input type="radio" value="none" v-model="picked">
+                                <label>None   </label>
+                                <input type="radio" value="ss" v-model="picked">
+                                <label>Second Structure   </label>
+                                <input type="radio" value="nsites" v-model="picked">
+                                <label>Potential N-Glycocsylation sites   </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span>Styles: </span>
+                            </td>
+                            <td>
+                                <span class="inlrr">LRR</span>
+                                <span v-if="picked === 'ss'" class="ssh">&alpha;-Helix</span>
+                                <span v-if="picked === 'ss'" class="sse">&beta;-Strand</span>
+                                <span v-if="picked === 'ss'" class="ssc">Coil</span>
+                                <span v-if="picked === 'nsites'" class="innsite">NxS/T (x ≠ P)</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="sequence">
+                    <span v-for="seq in seqTexts"
+                          v-bind:offset="seq.offset"
+                          v-bind:class="[ {inlrr: seq.inlrr},
+                                           picked === 'nsites' && seq.innsite ? 'innsite' : '',
+                                           picked === 'ss' ? seq.ssStyle : '' ]"
+                    >{{seq.seq}}</span>
+                </div>
+                <% if (process.env.NODE_ENV === 'development') { %>
+                    <button type="button" class="btn btn-success mt-1" v-on:click="markLrr()">mark LRR</button>
+                <% } %>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<%= require('../../components/footer/footer.ejs')() %>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha256-CjSoeELFOcH0/uxWu6mC/Vlrc1AARqbm/jiiImDGV3s=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.min.js" integrity="sha256-chlNFSVx3TdcQ2Xlw7SvnbLAavAQLO0Y/LBiWX04viY=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-multiselect@2.1.6/dist/vue-multiselect.min.js" integrity="sha256-wlV5NwZIO2I2LLLnqoAvxr5RMplF64uEMH67yvXzCRY=" crossorigin="anonymous"></script>
+
+</body>
+</html>

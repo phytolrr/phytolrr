@@ -1,0 +1,36 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/core": "^7.4.5",
+    "@babel/preset-env": "^7.4.5",
+    "@babel/runtime": "^7.4.5",
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.0.6",
+    "babel-plugin-transform-remove-strict-mode": "0.0.2",
+    "clean-webpack-plugin": "^3.0.0",
+    "copy-webpack-plugin": "^5.0.3",
+    "marked": "^0.6.2",
+    "vue-multiselect": "^2.1.6",
+    "webpack": "^4.32.2",
+    "zip-webpack-plugin": "^3.0.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-runtime": "^7.4.4",
+    "ejs-loader": "^0.3.3",
+    "html-webpack-plugin": "^3.2.0",
+    "jquery": "^3.4.1",
+    "vue": "^2.6.10",
+    "webpack-cli": "^3.3.2"
+  }
+}

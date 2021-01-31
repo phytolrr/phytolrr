@@ -1,0 +1,49 @@
+
+<script>
+    function isIE() {
+        var ua = window.navigator.userAgent;
+        var msie = ua.indexOf("MSIE ");
+
+        if (msie > 0 || !!navigator.userAgent.match(/Trident.*rv\:11\./)) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    if (isIE()) {
+        alert("This site is not compatible with IE. Please use Chrome / Firefox / Safari / Opera / Edge to access this site.");
+    }
+</script>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
+    <div class="container">
+        <a class="navbar-brand" href="/">PhytoLRR</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <% if (active === "db") { %><li class="nav-item active"><% } else { %><li class="nav-item"><% } %>
+                    <a class="nav-link" href="/">Database</a>
+                </li>
+                <% if (active === "findlrr") { %><li class="nav-item active"><% } else { %><li class="nav-item"><% } %>
+                    <a class="nav-link" href="/findlrr">Predict LRRs</a>
+                </li>
+                <% if (active === "about") { %><li class="nav-item active"><% } else { %><li class="nav-item"><% } %>
+                    <a class="nav-link" href="/about">About</a>
+                </li>
+            </ul>
+            <div id="global-search" class="form-inline my-2 my-lg-0">
+                <input class="form-control mr-sm-2" type="search"
+                       placeholder="Sequence ID"
+                       title="Input part of the sequence ID and find it from the database"
+                       v-model="keyword"
+                       @keyup.enter="onSearch">
+                <button class="btn btn-outline-success my-2 my-sm-0"
+                        v-on:click="onSearch()">Search</button>
+            </div>
+        </div>
+    </div>
+</nav>
