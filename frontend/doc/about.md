@@ -6,7 +6,7 @@ In plants, the leucine-rich repeat receptor-like protein kinases (LRR-RLKs) are 
 
 ## The Phyto-LRR prediction program
 
-Since the program is based on the position specific scoring matrix (PSSM) algorithm and its training dataset are 4000 LRR motifs HCSs from LRR-RLKs of 17 land plant species (Tab. 1), this [plant LRR prediction program](/findlrr) could identify plant LRRs effectively, especially for LRR motifs in plant LRR-RLKs.
+Since the program is based on the position specific scoring matrix (PSSM) algorithm and its training dataset are 4000 LRR motifs HCSs from LRR-RLKs of 17 land plant species (Tab. 1), this [plant LRR prediction program](/findlrr) could identify plant LRRs effectively, especially for LRR motifs in plant LRR-RLKs. The program also has an offline version in the form of a python package, which has been published on PyPI: https://pypi.org/project/predict-phytolrr/.
 
 ## The database of the plant LRR repeats
 
